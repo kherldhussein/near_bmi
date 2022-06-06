@@ -487,6 +487,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "near-bmi"
+version = "0.1.0"
+dependencies = [
+ "near-contract-standards",
+ "near-sdk",
+]
+
+[[package]]
 name = "near-contract-standards"
 version = "4.0.0-pre.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -628,14 +636,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "near-smart-contract-rust-template"
-version = "0.1.0"
-dependencies = [
- "near-contract-standards",
- "near-sdk",
 ]
 
 [[package]]
