@@ -27,14 +27,14 @@ impl AppUser {
 
 #[derive(Clone, Deserialize, Serialize, BorshDeserialize, BorshSerialize, Debug)]
 #[serde(crate = "near_sdk::serde")]
-pub struct GetData {
+pub struct Data {
   id: String,
   bmi: f32,
 }
 
-impl GetData {
+impl Data {
   pub fn set_data(id: String, bmi: f32) -> Self {
-    GetData { id, bmi }
+    Data { id, bmi }
   }
 }
 // Get user consent to save the data
@@ -50,19 +50,19 @@ impl DataPermission {
 
 #[near_bindgen]
 #[derive(Default, BorshDeserialize, BorshSerialize, Clone, Debug)]
-pub struct Data {
+pub struct Contract {
   uid: AccountId,
   app_user: HashMap<String, AppUser>,
-  data: HashMap<String, GetData>,
+  data: HashMap<String, Data>,
 }
 
 #[near_bindgen]
-impl Data {
+impl Contract {
   #[init]
   pub fn new(uid: AccountId) -> Self {
     let app_user: HashMap<String, AppUser> = HashMap::new();
-    let data: HashMap<String, GetData> = HashMap::new();
-    Data {
+    let data: HashMap<String, Data> = HashMap::new();
+    Contract {
       uid,
       data,
       app_user,
@@ -98,7 +98,7 @@ impl Data {
       Some(_data) => {
         if _data == true {
           log!("Permission Accepted");
-          self.data.insert(u_name, GetData::set_data(id, bmi));
+          self.data.insert(u_name, Data::set_data(id, bmi));
           log!("BIOSECURITY MEASURES ARE IN EFFECT");
         } else {
           log!("Kindly accept Permission to save your Data");
@@ -179,7 +179,7 @@ mod test {
     let context = get_context(to_valid_account("kherld.testnet"));
 
     testing_env!(context.build());
-    let mut _data = Data::new(kherld.to_string());
+    let mut _data = Contract::new(kherld.to_string());
     _data.set_user("Eternity Pro ".to_owned());
     let data = _data.app_user.len();
     assert_eq!(data, 1, "Should be one user");
@@ -192,7 +192,7 @@ mod test {
     let context = get_context(to_valid_account("kherld.testnet"));
 
     testing_env!(context.build());
-    let mut _data = Data::new(kherld.to_string());
+    let mut _data = Contract::new(kherld.to_string());
     let permit = DataPermission::get_permission(true);
     let compute = _data.compute(92, 135.0, &permit);
     println!("The following information is 💖 to your health");
@@ -209,7 +209,7 @@ mod test {
     let context = get_context(to_valid_account("kherld.testnet"));
 
     testing_env!(context.build());
-    let mut _data = Data::new(kherld.to_string());
+    let mut _data = Contract::new(kherld.to_string());
     let test_get = _data.get_data(kherld.to_string());
     assert!(test_get.is_none());
   }
@@ -221,7 +221,7 @@ mod test {
     let context = get_context(to_valid_account("kherld.testnet"));
 
     testing_env!(context.build());
-    let mut _data = Data::new(kherld.to_string());
+    let mut _data = Contract::new(kherld.to_string());
     let permit = DataPermission::get_permission(true);
     let delete_test = _data.delete_data(kherld.to_string(), &permit);
     assert_eq!((), delete_test);
