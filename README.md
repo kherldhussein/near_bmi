@@ -16,9 +16,9 @@ Project structure for writing smart contracts in Rust for NEAR Protocol
 
 let's compute someones random body mass index 
 
-``` near call near-bmi.kherld.testnet compute '{"weight":52,"height":127.0,"permit":true}'  --accountId random.testnet ```
+``` near call near-bmi.kherld.testnet compute ' { "weight": 52, "height": 127.0, "permit": true } '  --accountId random.testnet ```
 
-Set ``` "permit":true ``` to save your data 
+Set ``` "permit": true ``` to save your data 
 
 This will result to
 
