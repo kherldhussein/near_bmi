@@ -4,8 +4,10 @@ use near_sdk::{env, log, near_bindgen};
 use std::collections::HashMap;
 
 pub type AccountId = String;
-// Body Mass Index (BMI) is a value derieved from person's weight and height.
-// The result of BMI measurement can give an idea about weather a person has correct weight and height.
+
+/*  Body Mass Index (BMI) is a value derieved from person's weight and height.
+    The result of BMI measurement can give an idea about weather a person has correct weight and height.
+*/
 
 #[derive(Serialize, Deserialize, BorshDeserialize, BorshSerialize, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
@@ -28,23 +30,35 @@ impl AppUser {
 #[derive(Clone, Deserialize, Serialize, BorshDeserialize, BorshSerialize, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Data {
-  id: String,
+  uid: String,
   bmi: f32,
 }
 
 impl Data {
-  pub fn set_data(id: String, bmi: f32) -> Self {
-    Data { id, bmi }
+  pub fn new(uid: String, bmi: f32) -> Self {
+    Self { uid, bmi }
   }
 }
-// Get user consent to save the data
-#[derive(Default, Deserialize, Serialize, BorshDeserialize, BorshSerialize, Clone, Debug)]
+
+// Get user consent to set bio security measures the data
+#[derive(Deserialize, Serialize, BorshDeserialize, BorshSerialize, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct DataPermission(Option<bool>);
 
 impl DataPermission {
-  pub fn get_permission(data: bool) -> Self {
-    DataPermission(Some(data))
+  pub fn new<T: Into<Option<bool>>>(data: T) -> Self {
+    let data: Option<bool> = data.into();
+    match data {
+      Some(data) => Self(Some(data)),
+      None => Self(None),
+    }
+  }
+}
+
+// Bio security measures defaults to true
+impl Default for DataPermission {
+  fn default() -> Self {
+    Self(Some(true))
   }
 }
 
@@ -69,45 +83,63 @@ impl Contract {
     }
   }
   /*
-   BMI calculation is based on a simple formula using a person's weight and height.
-   The Formular for BMI= kg/m2 where kg is person's weight in kilograms and m2 is their height in meters squared.
-   in simple fomart it would be BMI = (weight in kilograms)/(Heights in meters * Heights in meters)
+      BMI calculation is based on a simple formula using a person's weight and height.
+      The Formular for BMI= kg/m2 where kg is person's weight in kilograms and m2 is their height in meters squared.
+      in simple fomart it would be BMI = (weight in kilograms)/(Heights in meters * Heights in meters)
   */
 
   pub fn compute(&mut self, weight: u32, height: f32, permit: &DataPermission) -> i32 {
-    let id = self.app_user.len().to_string();
+    // let id = self.app_user.len() as u32;
+
     let u_name = env::signer_account_id().to_string();
+
     let height = height / 100.0;
+
     // For example if a person's weight is 92  and height is 136 then BMI=  92/(1.36^2) = 50
     let bmi = weight as f32 / height.powi(2);
+
     // For better readability we return 32-bit signed integer type when dealing with conversion.
     let n_bmi = ((bmi * 100f32).trunc() / 100.0) as i32;
+
     /*  BMI calculatar indicate wheather person falls under healthy weight, underweight or overweight.
         If a person's BMI is out of healthy range, their health risk may significantly increases.
         BMI range for adults BMI: weight status Below 18.5: Underweight 18.5 - 24.9, Normal or healthy weight 25.0 - 29.9, Overweight 30.0 & above: Obese
     */
+
     match bmi {
       bmi if bmi < 18.5 => log!("{} You are Underweight  ", u_name),
-      bmi if bmi >= 18.5 && bmi <= 24.9 => log!("{} You are Underweight  ", u_name),
-      bmi if bmi >= 25.0 && bmi <= 29.9 => log!("{} You are Underweight  ", u_name),
+      bmi if (18.5..=24.9).contains(&bmi) => log!("{} You are Underweight  ", u_name),
+      bmi if (25.0..=29.9).contains(&bmi) => log!("{} You are Underweight  ", u_name),
       _other => log!("{} You are Obese  ", u_name),
     }
 
     log!("BMI: {}", n_bmi);
+
     match permit.0 {
       Some(_data) => {
-        if _data == true {
-          log!("Permission Accepted");
-          self.data.insert(u_name, Data::set_data(id, bmi));
-          log!("BIOSECURITY MEASURES ARE IN EFFECT");
+        if _data {
+          match self.data.get(&u_name) {
+            Some(_) => {
+              env::log_str("We've got your data😍😍");
+            }
+            None => {
+              env::log_str("Permission Accepted");
+
+              self
+                .data
+                .insert(u_name, Data::new(env::signer_account_id().to_string(), bmi));
+
+              env::log_str("BIOSECURITY MEASURES ARE IN EFFECT");
+            }
+          }
         } else {
-          log!("Kindly accept Permission to save your Data");
+          env::log_str("Kindly accept Permission to secure your Data");
         }
       }
       None => (),
     }
 
-    return n_bmi;
+    n_bmi
   }
 
   pub fn set_user(&mut self, u_name: String) {
@@ -115,12 +147,12 @@ impl Contract {
     let _app_user = env::signer_account_id().to_string();
     let current_user = self.app_user.get(&_app_user);
     match current_user {
-      Some(_) => log!("The provided uid is already in use by an existing user"),
+      Some(_) => env::log_str("The provided uid is already in use by an existing user"),
       None => {
         self
           .app_user
           .insert(_app_user, AppUser::new_user(uid, u_name));
-        log!("Data set successfully");
+        env::log_str("Data set successfully");
       }
     }
   }
@@ -130,11 +162,11 @@ impl Contract {
     let d = self.data.get(&uid);
     match d {
       Some(_data) => {
-        let msg = format!("BMI Data: {} {}", _data.bmi, _data.id);
+        let msg = format!("BMI Data: {} {}", _data.bmi, _data.uid);
         Some(msg)
       }
       None => {
-        log!("No Data Found");
+        env::log_str("No Data Found");
         None
       }
     }
@@ -143,11 +175,11 @@ impl Contract {
   pub fn delete_data(&mut self, uid: String, permit: &DataPermission) {
     match permit.0 {
       Some(_data) => {
-        if _data == true {
+        if _data {
           self.data.remove(&uid);
-          log!("Your Data Is Delete");
+          env::log_str("Your Data Is Delete");
         } else {
-          log!("Kindly accept Permission to delete your Data");
+          env::log_str("Kindly accept Permission to delete your Data");
         }
       }
       None => (),
@@ -193,11 +225,11 @@ mod test {
 
     testing_env!(context.build());
     let mut _data = Contract::new(kherld.to_string());
-    let permit = DataPermission::get_permission(true);
-    let compute = _data.compute(92, 135.0, &permit);
+    let permit = DataPermission::default();
+    let compute = _data.compute(45, 125.0, &permit);
     println!("The following information is 💖 to your health");
     assert_eq!(
-      50, compute,
+      28, compute,
       "Should be match the expected result from computation",
     );
   }
@@ -222,7 +254,7 @@ mod test {
 
     testing_env!(context.build());
     let mut _data = Contract::new(kherld.to_string());
-    let permit = DataPermission::get_permission(true);
+    let permit = DataPermission::default();
     let delete_test = _data.delete_data(kherld.to_string(), &permit);
     assert_eq!((), delete_test);
   }
