@@ -2,7 +2,7 @@
 
 Near implementation of Body Mass Index (BMI) of person derrived from weight and height.
 
-BMI helps measure obesity rate which helps to evaluate obesity level in people. 
+BMI helps measure obesity rate which helps Doctors to evaluate obesity level in people. 
 
 Project structure for writing smart contracts in Rust for NEAR Protocol
 
